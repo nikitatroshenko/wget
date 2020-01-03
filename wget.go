@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/nikitatroshenko/wget/utils"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,29 +13,34 @@ import (
 )
 
 func main() {
-	rawurl := os.Args[1]
+	flag.Parse()
+
+	tailArgs := flag.Args()
+	rawurl := tailArgs[0]
 	parsed, err := url.Parse(rawurl)
 	check(err)
 	log.Printf("scheme: %s\n", parsed.Scheme)
-
-	resp, err := http.Get(rawurl)
-	check(err)
-
-	body, err := ioutil.ReadAll(resp.Body)
-	check(err)
-	err = resp.Body.Close()
-	check(err)
 	filename := utils.UrlFileName(parsed)
 	log.Printf("filename: '%s'\n", filename)
+
 	file, _ := os.Create(filename)
 	defer file.Close()
-	_, err = fmt.Fprintf(file, "%s", body)
-
-	check(err)
+	wgetHttpResource(rawurl, file)
 }
 
 func check(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func wgetHttpResource(rawurl string, writer io.Writer) {
+	resp, err := http.Get(rawurl)
+	check(err)
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	check(err)
+	_, err = fmt.Fprintf(writer, "%s", body)
+	check(err)
 }
