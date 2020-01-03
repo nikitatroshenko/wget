@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/nikitatroshenko/wget/http"
 	"github.com/nikitatroshenko/wget/utils"
+	"io"
 	"log"
 	"net/url"
 	"os"
@@ -24,10 +25,12 @@ func main() {
 	fileName := utils.UrlFileName(parsed)
 	log.Printf("fileName: '%s'\n", fileName)
 
-	file, _ := os.Create(fileName)
-	defer file.Close()
-	n, err := http.WgetHttpResource(rawurl, file)
+	response, err := http.WgetHttpResource(rawurl)
 	check(err)
+	file, err := os.Create(fileName)
+	check(err)
+	defer file.Close()
+	n, err := io.Copy(file, response)
 	log.Printf("'%s' saved [%d]", fileName, n)
 }
 

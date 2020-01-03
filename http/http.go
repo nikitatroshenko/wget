@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -15,23 +16,27 @@ var bodyFile = flag.String("body-file", "", "Name of file from which to take req
 
 // WgetHttpResource performs HTTP request to the specified URL and saves response to the provided writer
 // HTTP method is passed through command line arguments
-func WgetHttpResource(rawurl string, writer io.Writer) (written int64, err error) {
+func WgetHttpResource(rawurl string) (io.Reader, error) {
 	requestBody, err := getBody()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	req, err := http.NewRequest(*method, rawurl, requestBody)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	n, err := io.Copy(writer, resp.Body)
-	return n, err
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return &buf, nil
 }
 
 type flagValuesConflictError struct {
